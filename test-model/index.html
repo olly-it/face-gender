@@ -1,0 +1,23 @@
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<div id="test" width="224" height="224"></canvas>
+
+<script>
+(async () => {
+  const URL = "./tm-my-image-model/";
+  const model = await tmImage.load(URL+"model.json", URL+"metadata.json");
+  console.log("Model loaded:", model);
+
+  //const testCanvas = document.getElementById('test');
+  const testCanvas = document.createElement('canvas');
+  const ctx = testCanvas.getContext('2d');
+  ctx.fillStyle = "red";
+  ctx.fillRect(0,0,224,224);
+
+  const prediction = await model.predict(testCanvas);
+  console.log(prediction);
+
+  document.getElementById("test").appendChild(testCanvas);
+})();
+</script>

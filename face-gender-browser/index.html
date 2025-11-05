@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Conteggio Persone + Gender (olly)</title>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.4/dist/teachablemachine-image.min.js"></script>-->
+
+<style>
+  body { background:#111; color:white; text-align:center; font-family:sans-serif; }
+  video, canvas { border-radius:10px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<h2>Conteggio Persone</h2>
+<video id="video" width="640" height="480" autoplay muted></video>
+<canvas id="canvas" width="640" height="480"></canvas>
+<p id="status">Caricamento modelli...</p>
+
+<!--<br><div id="face-container"></div>-->
+<div id="predictions"></div>
+
+<script>
+(async () => {
+  const MODEL_URL_FACE = 'https://justadudewhohacks.github.io/face-api.js/models/';
+  const MODEL_URL_GENDER = './tm-my-image-model/'; // 👈 metti il TUO URL qui
+
+  // ✅ Verifica che faceapi sia stato caricato
+  if (!window.faceapi) {
+    document.getElementById("status").innerText = "ERRORE: face-api.js non caricato!";
+    console.error("face-api.js non caricato");
+    return;
+  }
+
+  // load models
+  let genderModel;
+
+  // predictions
+  const predictionsDiv = document.getElementById('predictions');
+
+  await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL_FACE);
+  genderModel = await tmImage.load(MODEL_URL_GENDER + "model.json", MODEL_URL_GENDER + "metadata.json");
+  document.getElementById("status").innerText = "Modelli caricati ✅ — Avvio webcam...";
+  console.log("GENDER MODEL", genderModel);
+
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  // Avvio webcam
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => video.srcObject = stream)
+    .catch(err => console.error(err));
+
+  video.addEventListener("playing", async () => {
+    document.getElementById("status").innerText = "Analisi in corso...";
+
+    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224 });
+
+    setInterval(async () => {
+      const detections = await faceapi.detectAllFaces(video, options);
+
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const resized = faceapi.resizeResults(detections, video);
+
+      let male = 0, female = 0;
+
+      predictionsDiv.innerHTML = ""; // pulisci output
+
+      for (const det of resized) {
+          // face detected
+          const { box } = det;
+          ctx.strokeStyle = "#00FF00";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(box.x, box.y, box.width, box.height);
+          ctx.fillStyle = "#fff";
+
+          // try gender
+          try {
+            const faceCanvas = document.createElement('canvas');
+            const faceCtx = faceCanvas.getContext('2d');
+            faceCanvas.width = box.width;
+            faceCanvas.height = box.height;
+            faceCtx.drawImage(video, box.x, box.y, box.width, box.height, 0, 0, box.width, box.height);
+            // ok qui il face container è buono
+            predictionsDiv.appendChild(faceCanvas);
+
+            console.log("11111");
+            console.log(faceCanvas instanceof HTMLCanvasElement);
+            console.log(faceCanvas);
+
+            /*const prediction = await genderModel.predict(faceCanvas);
+            console.log("22222");
+
+            const top = prediction.reduce((prev, curr) => (curr.probability > prev.probability ? curr : prev));
+            const label = top.className;
+            if (label.toLowerCase().includes('male')) male++;
+            else if (label.toLowerCase().includes('female')) female++;
+            */
+          } catch (error) {
+            console.error('Errore nella predizione', error);
+            // gestisci l'errore come preferisci
+          }
+          // ctx.fillText(`${label}`, box.x + 5, box.y - 5);
+      }
+      document.getElementById("status").innerText = `Persone: ${resized.length} | Maschi: ${male} | Femmine: ${female}`;
+      
+    }, 1000);
+  });
+})();
+</script>
+
+</body>
+</html>

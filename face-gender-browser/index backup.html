@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Conteggio Persone + Gender (Teachable Machine)</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <!-- ✅ Libreria ufficiale di Teachable Machine -->
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <style>
+    body { background:#111; color:white; text-align:center; font-family:sans-serif; }
+    video, canvas { border-radius:12px; margin-top:10px; }
+    #info { margin-top:15px; font-size:1.2rem; }
+  </style>
+</head>
+<body>
+  <h1>Conteggio Persone + Gender (Teachable Machine) - v2</h1>
+  <video id="video" width="640" height="480" autoplay muted></video>
+  <canvas id="overlay" width="640" height="480"></canvas>
+  <div id="info">Caricamento...</div>
+
+  <script>
+    const MODEL_URL_FACE = 'https://justadudewhohacks.github.io/face-api.js/models/';
+    const MODEL_URL_GENDER = './tm-my-image-model/'; // 👈 metti il TUO URL qui
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+    const info = document.getElementById('info');
+
+    let genderModel;
+
+    async function loadModels() {
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL_FACE);
+      genderModel = await tmImage.load(MODEL_URL_GENDER + "model.json", MODEL_URL_GENDER + "metadata.json");
+      info.textContent = "Modelli caricati ✅ — Avvio webcam...";
+      startVideo();
+    }
+
+    function startVideo() {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => { video.srcObject = stream; })
+        .catch(err => console.error("Errore webcam:", err));
+    }
+
+    video.addEventListener('playing', async () => {
+      const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
+      info.textContent = "Analisi in corso...";
+
+      setInterval(async () => {
+        console.log("1111111111");
+        const detections = await faceapi.detectAllFaces(video, opts);
+        console.log("2222222222");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        faceapi.matchDimensions(canvas, { width: video.width, height: video.height });
+        const resized = faceapi.resizeResults(detections, { width: video.width, height: video.height });
+
+        let male = 0, female = 0;
+
+        for (const det of resized) {
+          const { box } = det;
+          const faceCanvas = document.createElement('canvas');
+          const faceCtx = faceCanvas.getContext('2d');
+          faceCanvas.width = box.width;
+          faceCanvas.height = box.height;
+          faceCtx.drawImage(video, box.x, box.y, box.width, box.height, 0, 0, box.width, box.height);
+
+          const prediction = await genderModel.predict(faceCanvas);
+          const top = prediction.reduce((prev, curr) => (curr.probability > prev.probability ? curr : prev));
+          const label = top.className;
+
+          if (label.toLowerCase().includes('male')) male++;
+          else if (label.toLowerCase().includes('female')) female++;
+
+          ctx.strokeStyle = "#00FF00";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(box.x, box.y, box.width, box.height);
+          ctx.fillStyle = "#fff";
+          ctx.fillText(`${label}`, box.x + 5, box.y - 5);
+        }
+
+        info.textContent = `Persone: ${resized.length} | Maschi: ${male} | Femmine: ${female}`;
+      }, 700);
+    });
+
+    loadModels();
+  </script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Conteggio Persone</title>
+
+<!-- ✅ Importazione CERTA di face-api.js -->
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+<style>
+  body { background:#111; color:white; text-align:center; font-family:sans-serif; }
+  video, canvas { border-radius:10px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<h2>Conteggio Persone</h2>
+<video id="video" width="640" height="480" autoplay muted></video>
+<canvas id="canvas" width="640" height="480"></canvas>
+<p id="status">Caricamento modelli...</p>
+
+<script>
+(async () => {
+  // ✅ Verifica che faceapi sia stato caricato
+  if (!window.faceapi) {
+    document.getElementById("status").innerText = "ERRORE: face-api.js non caricato!";
+    console.error("face-api.js non caricato");
+    return;
+  }
+
+  const MODEL_URL = "https://justadudewhohacks.github.io/face-api.js/models/";
+
+  await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+  document.getElementById("status").innerText = "Modello caricato ✅ — Avvio webcam...";
+
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  // Avvio webcam
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => video.srcObject = stream)
+    .catch(err => console.error(err));
+
+  video.addEventListener("playing", async () => {
+    document.getElementById("status").innerText = "Analisi in corso...";
+
+    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224 });
+
+    setInterval(async () => {
+      const detections = await faceapi.detectAllFaces(video, options);
+
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const resized = faceapi.resizeResults(detections, video);
+
+      resized.forEach(d => {
+        const box = d.box;
+        ctx.strokeStyle = "#00FF00";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(box.x, box.y, box.width, box.height);
+      });
+
+      document.getElementById("status").innerText =
+        "Persone rilevate: " + detections.length;
+    }, 300);
+  });
+})();
+</script>
+
+</body>
+</html>
