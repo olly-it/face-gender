@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>MediaPipe + Teachable Machine Demo</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      background: #111;
+      color: #eee;
+    }
+    #container {
+      position: relative;
+      width: 640px;
+      height: 480px;
+    }
+    video, canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border-radius: 8px;
+    }
+    #predictions {
+      margin-top: 10px;
+      background: #222;
+      padding: 10px 20px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>🔍 Face Detection + Teachable Machine Classification</h2>
+
+<div id="container">
+  <video id="video" width="640" height="480" autoplay muted playsinline></video>
+  <canvas id="output" width="640" height="480"></canvas>
+</div>
+
+<div id="predictions">Caricamento modello...</div>
+
+<!-- ✅ Librerie MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
+
+<!-- ✅ Librerie Teachable Machine -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.4/dist/teachablemachine-image.min.js"></script>
+
+<script>
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('output');
+  const ctx = canvas.getContext('2d');
+  const predictionsDiv = document.getElementById('predictions');
+
+  let tmModel;
+
+  async function loadModel() {
+    // Inserisci i tuoi file di modello TM (esportati da Teachable Machine)
+    const modelURL = "./tm-my-image-model/model.json";
+    const metadataURL = "./tm-my-image-model/metadata.json";
+    tmModel = await tmImage.load(modelURL, metadataURL);
+    predictionsDiv.textContent = "✅ Modello caricato, avvio videocamera...";
+  }
+
+  // Inizializza MediaPipe
+  const faceDetection = new FaceDetection({
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`
+  });
+
+  faceDetection.setOptions({
+    model: 'short', // "short" = veloce, "full" = più preciso
+    minDetectionConfidence: 0.5
+  });
+
+  faceDetection.onResults(onResults);
+
+  async function onResults(results) {
+    ctx.save();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+    let male = 0;
+    let female = 0;
+
+    if (results.detections.length > 0) {
+      for (const det of results.detections) {
+        const box = det.boundingBox;
+        const x = box.xCenter * canvas.width - (box.width * canvas.width) / 2;
+        const y = box.yCenter * canvas.height - (box.height * canvas.height) / 2;
+        const w = box.width * canvas.width;
+        const h = box.height * canvas.height;
+
+        // Disegna riquadro volto
+        ctx.strokeStyle = "lime";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, w, h);
+
+        // Ritaglia la faccia in un canvas temporaneo
+        const faceCanvas = document.createElement('canvas');
+        faceCanvas.width = w;
+        faceCanvas.height = h;
+        const faceCtx = faceCanvas.getContext('2d');
+        faceCtx.drawImage(video, x, y, w, h, 0, 0, w, h);
+
+        // Predizione con Teachable Machine
+        const prediction = await tmModel.predict(faceCanvas);
+        //console.log("PREDICTION", prediction);
+        const best = prediction.reduce((p, c) => c.probability > p.probability ? c : p);
+        
+        if (best.className.toLowerCase().includes('female')) female++;
+        else if (best.className.toLowerCase().includes('male')) male++;
+      }
+
+      predictionsDiv.textContent = `MALE: ${male}, FEMALE: ${female}, TOT:${(male+female)}`;
+
+    }
+
+    ctx.restore();
+  }
+
+  async function init() {
+    await loadModel();
+
+    const camera = new Camera(video, {
+      onFrame: async () => {
+        await faceDetection.send({ image: video });
+      },
+      width: 640,
+      height: 480
+    });
+
+    camera.start();
+  }
+
+  init();
+</script>
+
+</body>
+</html>

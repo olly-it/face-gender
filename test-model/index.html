@@ -1,6 +1,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
+<h2>basic</h2>
 <video id="video" width="224" height="224" autoplay muted></video>
 <br><br>
 <div id="test" width="224" height="224"></div>
@@ -13,13 +14,14 @@
         .catch(err => console.error(err));
     const video = document.getElementById("video");
     
-    // carica i modelli
+    // carica il modello
     const URL = "./tm-my-image-model/";
     const model = await tmImage.load(URL+"model.json", URL+"metadata.json");
-    console.log("Model loaded:", model);
+    console.log("gender model loaded:", model);
 
     setInterval(async () => {
         document.getElementById("test").innerHTML = "";
+
         const testCanvas = document.createElement('canvas');
         testCanvas.setAttribute("width",400);
         testCanvas.setAttribute("height",400);
@@ -30,8 +32,9 @@
 
         ctx.drawImage(video, box.x, box.y, box.width, box.height, 0, 0, box.width, box.height);
 
+        // gender
         const prediction = await model.predict(testCanvas);
-        console.log(prediction);
+        console.log("gender", prediction);
 
         document.getElementById("test").appendChild(testCanvas);
     }, 1000);

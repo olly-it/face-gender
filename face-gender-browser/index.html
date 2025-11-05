@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Conteggio Persone + Gender (olly)</title>
+<title>Conteggio Persone + Gender</title>
 
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
@@ -18,7 +18,9 @@
 </head>
 <body>
 
-<h2>Conteggio Persone</h2>
+<h2>Conteggio Persone + Gender?</h2>
+face-api e tensorflow hanno delle incompatibilità (face-api sotto sotto usa versioni diverse di tensorflow)<br>
+insieme fanno casino. soluzione: usare mediapipe per il face recognition (vedi /mediapipe).<br>
 <video id="video" width="640" height="480" autoplay muted></video>
 <canvas id="canvas" width="640" height="480"></canvas>
 <p id="status">Caricamento modelli...</p>
@@ -95,7 +97,11 @@
             console.log(faceCanvas instanceof HTMLCanvasElement);
             console.log(faceCanvas);
 
-            /*const prediction = await genderModel.predict(faceCanvas);
+            /* NOTE:
+            face-api e tensorflow hanno delle incompatibilità (face-api sotto sotto usa versioni diverse di tensorflow)<br>
+            insieme fanno casino. soluzione: usare mediapipe per il face recognition (vedi /mediapipe).
+
+            const prediction = await genderModel.predict(faceCanvas);
             console.log("22222");
 
             const top = prediction.reduce((prev, curr) => (curr.probability > prev.probability ? curr : prev));
