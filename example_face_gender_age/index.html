@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>fd</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1/dist/face-api.min.js"></script>
+  <style>
+    #videoContainer {
+      position: relative;
+      width: 640px;
+      height: 480px;
+    }
+    video, canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+  <h2>fd</h2>
+  <div id="info"></div>
+  <br>
+  <label><input type="checkbox" id="toggleCheckbox" onchange="toggleVideo()"> Mostra video</label>
+  <div id="videoContainer" style="display: none;">
+    <video id="video" width="640" height="480" autoplay muted></video>
+    <canvas id="overlay" width="640" height="480"></canvas>
+  </div>
+
+  <script>
+    function toggleVideo() {
+        const videoDiv = document.getElementById("videoContainer");
+        const checkbox = document.getElementById("toggleCheckbox");
+        videoDiv.style.display = checkbox.checked ? "block" : "none";
+    }
+    function log(text) {
+        document.getElementById('info').textContent=text;
+    }
+    window.onload = async () => {
+      await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1/model/');
+      await faceapi.nets.ageGenderNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1/model/');
+
+      const video = document.getElementById('video');
+      navigator.mediaDevices.getUserMedia({ video: {} })
+        .then(stream => {
+          video.srcObject = stream;
+          video.play();
+        })
+        .catch(err => console.error('Errore accesso webcam:', err));
+
+      video.addEventListener('play', () => {
+        const canvas = document.getElementById('overlay');
+        const displaySize = { width: video.width, height: video.height };
+        faceapi.matchDimensions(canvas, displaySize);
+
+        setInterval(async () => {
+          const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+            .withAgeAndGender();
+          const resizedDetections = faceapi.resizeResults(detections, displaySize);
+
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          var i = 0;
+          var txt = "";
+          resizedDetections.forEach(det => {
+            const { age, gender, genderProbability } = det;
+            const box = det.detection.box;
+            const drawBox = new faceapi.draw.DrawBox(box, { label: `${parseInt(age)} anni, ${gender} (${(genderProbability * 100).toFixed(0)}%)` });
+            drawBox.draw(canvas);
+            txt += (++i) + ") AGE: " + parseInt(age) + ", GENDER: " + gender;
+          });
+          log(txt);
+        }, 1000);
+      });
+    };
+  </script>
+</body>
+</html>

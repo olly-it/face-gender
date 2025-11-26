@@ -26,7 +26,6 @@ Poi segui questi passi:
 
 6. Nella tua app useremo questi file per caricare il modello.
 
----
 
 ## Codice
 1. face-browser: contiene una versione che fa semplicemente il detect del volto (usando face-api)
@@ -34,6 +33,13 @@ Poi segui questi passi:
 3. example_by_teachable_machine: codice recuperato direttamente dall'output di TeachableMachine, adattato
 4. face-gender-browser: prova con chat-gpt a mettere insieme il modello per il detect del volto (face-api) e il modello del gender (generato con TeachableMachine). face-api e TeachableMachine hanno un po' di casini di compatibilità
 5. mediapipe: mette insieme il modello per il face-detection usando MediaPipe (invece di face-api) e il modello del gender generato con TableMachine. Funziona!
+6. example_face_gender_age: gira su browser, recupera gender e age delle persone collegate e le scrive in video. Di default la camera è spenta, possibilità di accendera. Funziona!
 
+
+## start in locale
+per farlo partire dalla 8000 (con python3 installato):  
+```
+python3 -m http.server 8000
+```
 Olly
 
