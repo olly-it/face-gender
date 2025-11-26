@@ -37,9 +37,10 @@ Poi segui questi passi:
 
 
 ## start in locale
-per farlo partire dalla 8000 (con python3 installato):  
+Per farlo partire dalla 8000 (con python3 installato):  
 ```
 python3 -m http.server 8000
 ```
-Olly
 
+
+Olly
