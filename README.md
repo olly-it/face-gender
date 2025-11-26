@@ -33,7 +33,7 @@ Poi segui questi passi:
 3. example_by_teachable_machine: codice recuperato direttamente dall'output di TeachableMachine, adattato
 4. face-gender-browser: prova con chat-gpt a mettere insieme il modello per il detect del volto (face-api) e il modello del gender (generato con TeachableMachine). face-api e TeachableMachine hanno un po' di casini di compatibilità
 5. mediapipe: mette insieme il modello per il face-detection usando MediaPipe (invece di face-api) e il modello del gender generato con TableMachine. Funziona!
-6. example_face_gender_age: gira su browser, recupera gender e age delle persone collegate e le scrive in video. Di default la camera è spenta, possibilità di accendera. Funziona!
+6. example_face_gender_age: gira su browser, recupera gender e age delle persone collegate e le scrive in video. Di default la camera è spenta, possibilità di accendera. Utilizza face-api. Funziona!
 
 
 ## start in locale
